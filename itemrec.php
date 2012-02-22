@@ -2,6 +2,11 @@
 session_start();
 require_once("connect.php");
 
+function array_count_values_of($value, $array) {
+    $counts = array_count_values($array);
+    return $counts[$value];
+}
+
 //redefine as session var later
 $user = "Tony";
 $user_dislikes = array();
@@ -49,44 +54,50 @@ while ($roww = mysql_fetch_array($user_dislikes2)) {
 	array_push($user_dislikes, $roww['first_item']);
 }
 
+$dislike_tolerance = 1;	
+while ($dislike_tolerance<=7) {	
 $query = mysql_query("SELECT first_item, second_item FROM master");
 
-while ($rowww = mysql_fetch_array($query)) {
-	if (in_array($rowww['first_item'], $user_dislikes)) {
-		continue;
-		}
-	elseif (in_array($rowww['second_item'], $user_dislikes)) {
-		continue;
-		}
-	else {
-		$first = $rowww['first_item'];
-		$queryy = mysql_query("SELECT first_item, second_item, total_pairings, total_first_items FROM master WHERE first_item = '$first'");
-		while ($rowwww = mysql_fetch_array($queryy)) {
-			if (($rowwww['total_pairings']==0) && (!in_array($rowwww['second_item'], $user_dislikes))) {
-				$choice = $rowwww['second_item'];
-				}
-			elseif ((($rowwww['total_first_items']/$rowwww['total_pairings'])>$nchoice) && (!in_array($rowwww['second_item'], $user_dislikes))) {
-				$nchoice = ($rowwww['total_first_items']/$rowwww['total_pairings']);
-				$choice = $rowwww['second_item'];
-				}
+	while ($rowww = mysql_fetch_array($query)) {
+		if ((array_count_values_of($rowww['first_item'], $user_dislikes))>=$dislike_tolerance) {
+			continue;
 			}
-		
-		$queryyy = mysql_query("SELECT first_item, second_item, total_pairings, total_first_items FROM master WHERE second_item = '$first'");
-		while ($rowwwww = mysql_fetch_array($queryyy)) {
-			if (($rowwwww['total_pairings']==0) && (!in_array($rowwwww['first_item'], $user_dislikes))) {
-				$choice = $rowwwww['first_item'];
+		elseif ((array_count_values_of($rowww['second_item'], $user_dislikes))>=$dislike_tolerance) {
+			continue;
+			}
+		else {
+			$first = $rowww['first_item'];
+			$queryy = mysql_query("SELECT first_item, second_item, total_pairings, total_first_items FROM master WHERE first_item = '$first'");
+			while ($rowwww = mysql_fetch_array($queryy)) {
+				if (($rowwww['total_pairings']==0) && ((array_count_values_of($rowwww['second_item'], $user_dislikes))<$dislike_tolerance)) {
+					$choice = $rowwww['second_item'];
+					}
+				elseif ((($rowwww['total_first_items']/$rowwww['total_pairings'])>$nchoice) && ((array_count_values_of($rowwww['second_item'], $user_dislikes))<$dislike_tolerance)) {
+					$nchoice = ($rowwww['total_first_items']/$rowwww['total_pairings']);
+					$choice = $rowwww['second_item'];
+					}
 				}
-			elseif (((1-($rowwwww['total_first_items']/$rowwwww['total_pairings']))>$nchoice) && (!in_array($rowwwww['first_item'], $user_dislikes))) {
-				$nchoice = ($rowwwww['total_first_items']/$rowwwww['total_pairings']);
-				$choice = $rowwwww['first_item'];
-				}
-			}	
-		if (!empty($choice)) {
-			break;
-		}
-		}
+			
+			$queryyy = mysql_query("SELECT first_item, second_item, total_pairings, total_first_items FROM master WHERE second_item = '$first'");
+			while ($rowwwww = mysql_fetch_array($queryyy)) {
+				if (($rowwwww['total_pairings']==0) && ((array_count_values_of($rowwwww['first_item'], $user_dislikes))<$dislike_tolerance)) {
+					$choice = $rowwwww['first_item'];
+					}
+				elseif (((1-($rowwwww['total_first_items']/$rowwwww['total_pairings']))>$nchoice) && ((array_count_values_of($rowwwww['first_item'], $user_dislikes))<$dislike_tolerance)) {
+					$nchoice = ($rowwwww['total_first_items']/$rowwwww['total_pairings']);
+					$choice = $rowwwww['first_item'];
+					}
+				}	
+			if (!empty($choice)) {
+				break;
+			}
+			}
+	}
+	if (!empty($choice)) {
+				break;
+			}
+	$dislike_tolerance++;
 }
-
 ?>
 
 <html>
